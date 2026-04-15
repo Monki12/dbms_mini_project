@@ -1,0 +1,189 @@
+---
+config:
+  theme: redux-color
+---
+erDiagram
+    classDef patient fill:#E3F2FD,stroke:#1E88E5,color:#000,stroke-width:1px;
+    classDef doctor fill:#E8F5E9,stroke:#43A047,color:#000,stroke-width:1px;
+    classDef billing fill:#FFF3E0,stroke:#FB8C00,color:#000,stroke-width:1px;
+    classDef admin fill:#F3E5F5,stroke:#8E24AA,color:#000,stroke-width:1px;
+    classDef audit fill:#ECEFF1,stroke:#546E7A,color:#000,stroke-width:1px;
+    PATIENT {
+        NUMBER patient_id PK
+        VARCHAR2 full_name
+        DATE dob
+        VARCHAR2 gender
+        VARCHAR2 blood_group
+        VARCHAR2 contact_number
+        VARCHAR2 email
+        VARCHAR2 address
+        VARCHAR2 emergency_contact_name
+        VARCHAR2 emergency_contact_phone
+        VARCHAR2 emergency_contact_relation
+        VARCHAR2 insurance_provider
+        VARCHAR2 insurance_policy_number
+        TIMESTAMP_TZ created_at
+        TIMESTAMP_TZ updated_at
+        VARCHAR2 created_by
+        NUMBER is_deleted
+        NUMBER row_version
+    }
+
+    MEDICAL_RECORD {
+        NUMBER record_id PK
+        NUMBER patient_id FK
+        VARCHAR2 allergies
+        VARCHAR2 chronic_conditions
+        VARCHAR2 surgical_history
+        VARCHAR2 family_history
+        VARCHAR2 vaccination_records
+        TIMESTAMP_TZ created_at
+        TIMESTAMP_TZ updated_at
+        VARCHAR2 created_by
+        NUMBER is_deleted
+        NUMBER row_version
+    }
+
+    APPOINTMENT {
+        NUMBER appointment_id PK
+        NUMBER patient_id FK
+        NUMBER doctor_id FK
+        DATE appt_date
+        TIMESTAMP slot_start
+        VARCHAR2 status
+        TIMESTAMP_TZ created_at
+        TIMESTAMP_TZ updated_at
+        VARCHAR2 created_by
+        NUMBER is_deleted
+        NUMBER row_version
+    }
+
+    CONSULTATION {
+        NUMBER consultation_id PK
+        NUMBER appointment_id FK
+        VARCHAR2 chief_complaint
+        VARCHAR2 diagnosis
+        VARCHAR2 treatment_notes
+        DATE follow_up_date
+        NUMBER referring_doctor_id FK
+        TIMESTAMP_TZ created_at
+        TIMESTAMP_TZ updated_at
+        VARCHAR2 created_by
+        NUMBER is_deleted
+        NUMBER row_version
+    }
+
+    PRESCRIPTION {
+        NUMBER prescription_id PK
+        NUMBER consultation_id FK
+        TIMESTAMP_TZ created_at
+        TIMESTAMP_TZ updated_at
+        VARCHAR2 created_by
+        NUMBER is_deleted
+        NUMBER row_version
+    }
+
+    PRESCRIPTION_ITEM {
+        NUMBER item_id PK
+        NUMBER prescription_id FK
+        VARCHAR2 medication_name
+        VARCHAR2 dosage
+        VARCHAR2 frequency
+        VARCHAR2 duration
+        VARCHAR2 special_instructions
+        NUMBER quantity
+        TIMESTAMP_TZ created_at
+        TIMESTAMP_TZ updated_at
+        VARCHAR2 created_by
+        NUMBER is_deleted
+        NUMBER row_version
+    }
+
+    BILLING {
+        NUMBER billing_id PK
+        NUMBER appointment_id FK
+        NUMBER consultation_fee
+        NUMBER additional_charges
+        VARCHAR2 additional_charges_reason
+        NUMBER discount_pct
+        NUMBER tax_pct
+        NUMBER total_amount
+        NUMBER amount_paid
+        VARCHAR2 payment_mode
+        VARCHAR2 payment_status
+        TIMESTAMP_TZ created_at
+        TIMESTAMP_TZ updated_at
+        VARCHAR2 created_by
+        NUMBER is_deleted
+        NUMBER row_version
+    }
+
+    DOCTOR {
+        NUMBER doctor_id PK
+        VARCHAR2 employee_id
+        VARCHAR2 full_name
+        VARCHAR2 specialisation
+        VARCHAR2 qualification
+        NUMBER years_of_experience
+        VARCHAR2 contact
+        VARCHAR2 email
+        NUMBER consultation_fee
+        NUMBER department_id FK
+        TIMESTAMP_TZ created_at
+        TIMESTAMP_TZ updated_at
+        VARCHAR2 created_by
+        NUMBER is_deleted
+        NUMBER row_version
+    }
+
+    DEPARTMENT {
+        NUMBER department_id PK
+        VARCHAR2 name
+        VARCHAR2 description
+        VARCHAR2 location
+        NUMBER head_doctor_id FK
+        TIMESTAMP_TZ created_at
+        TIMESTAMP_TZ updated_at
+        VARCHAR2 created_by
+        NUMBER is_deleted
+        NUMBER row_version
+    }
+
+    STAFF {
+        NUMBER staff_id PK
+        VARCHAR2 employee_id
+        VARCHAR2 full_name
+        VARCHAR2 role
+        NUMBER department_id FK
+        VARCHAR2 contact
+        VARCHAR2 email
+        VARCHAR2 shift
+        TIMESTAMP_TZ created_at
+        TIMESTAMP_TZ updated_at
+        VARCHAR2 created_by
+        NUMBER is_deleted
+        NUMBER row_version
+    }
+
+    AUDIT_LOG {
+        NUMBER log_id PK
+        VARCHAR2 table_name
+        VARCHAR2 operation
+        NUMBER record_id
+        CLOB old_values
+        CLOB new_values
+        VARCHAR2 changed_by
+        TIMESTAMP_TZ changed_at
+    }
+    PATIENT ||--o{ DOCTOR : has
+    DOCTOR ||--o{ DEPARTMENT : belongs_to
+    PATIENT ||--o{ MEDICAL_RECORD : has
+    MEDICAL_RECORD ||--o{ APPOINTMENT : books
+    APPOINTMENT ||--o{ CONSULTATION : contains
+    CONSULTATION ||--o{ PRESCRIPTION_ITEM : includes
+    PRESCRIPTION ||--o{ PRESCRIPTION_ITEM : contains
+    APPOINTMENT ||--o{ BILLING : generates
+    DOCTOR }o--o{ DEPARTMENT : heads
+    STAFF }o--o{ DEPARTMENT : belongs_to
+    DEPARTMENT }o--o{ DOCTOR : employs
+    APPNOINTMENT ||--o{ AUDIT_LOG : logs

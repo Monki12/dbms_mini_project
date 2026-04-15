@@ -1,0 +1,38 @@
+# =========================
+# Python / API (clinic-api)
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.env
+venv/
+env/
+.Python
+
+# =========================
+# Node / UI (clinic-ui)
+# =========================
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# npm/yarn/pnpm diagnostic logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# OS & IDE Files
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

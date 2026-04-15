@@ -1,0 +1,91 @@
+BEGIN
+  EXECUTE IMMEDIATE '
+  CREATE TABLE PATIENT_OTP (
+    otp_id        NUMBER(10) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    phone_number  VARCHAR2(15) NOT NULL,
+    otp_code      VARCHAR2(6)  NOT NULL,
+    created_at    TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP,
+    expires_at    TIMESTAMP WITH TIME ZONE NOT NULL,
+    is_used       NUMBER(1) DEFAULT 0 CHECK (is_used IN (0,1)),
+    attempt_count NUMBER(2) DEFAULT 0,
+    CONSTRAINT uq_otp_phone_active UNIQUE (phone_number, otp_code)
+  )';
+EXCEPTION
+  WHEN OTHERS THEN
+    IF SQLCODE != -955 THEN RAISE; END IF;
+END;
+/
+
+BEGIN
+  EXECUTE IMMEDIATE '
+  CREATE TABLE PATIENT_SESSION (
+    session_id    NUMBER(10) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    patient_id    NUMBER(10) NOT NULL REFERENCES PATIENT(patient_id),
+    refresh_token VARCHAR2(512) NOT NULL,
+    device_info   VARCHAR2(255),
+    ip_address    VARCHAR2(45),
+    created_at    TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP,
+    expires_at    TIMESTAMP WITH TIME ZONE NOT NULL,
+    is_revoked    NUMBER(1) DEFAULT 0 CHECK (is_revoked IN (0,1))
+  )';
+EXCEPTION
+  WHEN OTHERS THEN
+    IF SQLCODE != -955 THEN RAISE; END IF;
+END;
+/
+
+BEGIN
+  -- We add the columns allowing nulls initially to safely handle seeded data
+  EXECUTE IMMEDIATE 'ALTER TABLE PATIENT ADD phone_number VARCHAR2(15)';
+EXCEPTION
+  WHEN OTHERS THEN
+    IF SQLCODE != -1430 THEN RAISE; END IF;
+END;
+/
+
+BEGIN
+  EXECUTE IMMEDIATE 'ALTER TABLE PATIENT ADD otp_verified NUMBER(1) DEFAULT 0';
+EXCEPTION
+  WHEN OTHERS THEN
+    IF SQLCODE != -1430 THEN RAISE; END IF;
+END;
+/
+
+BEGIN
+  -- Backfill unique dummy phone numbers for seeded users based on patient_id
+  EXECUTE IMMEDIATE 'UPDATE PATIENT SET phone_number = ''9'' || LPAD(patient_id, 9, ''0'') WHERE phone_number IS NULL';
+  COMMIT;
+END;
+/
+
+BEGIN
+  EXECUTE IMMEDIATE 'ALTER TABLE PATIENT MODIFY phone_number NOT NULL';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+  EXECUTE IMMEDIATE 'ALTER TABLE PATIENT ADD CONSTRAINT uq_patient_phone_number UNIQUE (phone_number)';
+EXCEPTION
+  WHEN OTHERS THEN
+    IF SQLCODE != -2261 THEN RAISE; END IF;
+END;
+/
+
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE INDEX idx_otp_phone ON PATIENT_OTP(phone_number, is_used)';
+EXCEPTION
+  WHEN OTHERS THEN
+    IF SQLCODE != -955 AND SQLCODE != -1408 THEN RAISE; END IF;
+END;
+/
+
+BEGIN
+  EXECUTE IMMEDIATE 'CREATE INDEX idx_patient_phone ON PATIENT(phone_number)';
+EXCEPTION
+  WHEN OTHERS THEN
+    IF SQLCODE != -955 AND SQLCODE != -1408 THEN RAISE; END IF;
+END;
+/
+
+EXIT;
