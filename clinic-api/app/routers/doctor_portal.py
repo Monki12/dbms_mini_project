@@ -10,8 +10,9 @@ from app.exceptions import format_envelope
 router = APIRouter(tags=["Doctor Portal"])
 
 class ConsultationCreate(BaseModel):
-    notes: str = Field(..., max_length=2000)
+    chief_complaint: str = Field(..., max_length=1000)
     diagnosis: str = Field(..., max_length=1000)
+    treatment_notes: str = Field(..., max_length=2000)
 
 class PrescriptionItem(BaseModel):
     medication_name: str = Field(..., max_length=255)
@@ -28,16 +29,16 @@ def get_doctor_appointments(current_user: dict = Depends(get_current_user(["DOCT
     # VPD handles scoping automatically. We just read all appointments.
     with db.cursor() as cursor:
         cursor.execute("""
-            SELECT a.appointment_id, a.patient_id, a.doctor_id, a.department_id,
-                   a.appointment_date, a.appointment_time, a.status, a.reason_for_visit,
+            SELECT a.appointment_id, a.patient_id, a.doctor_id,
+                   a.appt_date, a.slot_start, a.status,
                    p.full_name as patient_name
             FROM APPOINTMENT a
             JOIN PATIENT p ON a.patient_id = p.patient_id
-            ORDER BY a.appointment_date DESC, a.appointment_time DESC
+            ORDER BY a.appt_date DESC, a.slot_start DESC
         """)
         columns = [col[0].lower() for col in cursor.description]
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        
+
     return format_envelope(True, data=rows)
 
 @router.get("/patients")
@@ -72,17 +73,17 @@ def create_consultation(appointment_id: int, data: ConsultationCreate, current_u
         # Insert Consultation
         try:
             sql = """
-                INSERT INTO CONSULTATION (appointment_id, doctor_id, patient_id, notes, diagnosis, created_by)
-                VALUES (:1, :2, :3, :4, :5, :6)
-                RETURNING consultation_id INTO :7
+                INSERT INTO CONSULTATION (appointment_id, chief_complaint, diagnosis, treatment_notes, created_by)
+                VALUES (:1, :2, :3, :4, :5)
+                RETURNING consultation_id INTO :6
             """
             cid_var = cursor.var(int)
-            cursor.execute(sql, [appointment_id, doc_id, patient_id, data.notes, data.diagnosis, username, cid_var])
+            cursor.execute(sql, [appointment_id, data.chief_complaint, data.diagnosis, data.treatment_notes, username, cid_var])
             db.commit()
             return format_envelope(True, {"consultation_id": cid_var.getvalue()[0]})
         except oracledb.IntegrityError:
             db.rollback()
-            raise HTTPException(400, "Consultation already exists for this exact chronological appointment sequence.")
+            raise HTTPException(400, "Consultation already exists for this appointment.")
 
 
 @router.post("/appointments/{appointment_id}/prescription")
@@ -91,27 +92,26 @@ def create_prescription(appointment_id: int, data: PrescriptionCreate, current_u
     username = current_user.get('username', f"DOC_{doc_id}")
     
     with db.cursor() as cursor:
-        # Find consultation id attached to the appointment securely filtered by VPD
+        # Find consultation for this appointment
         cursor.execute("""
-            SELECT c.consultation_id, c.patient_id 
+            SELECT c.consultation_id
             FROM CONSULTATION c
-            JOIN APPOINTMENT a ON c.appointment_id = a.appointment_id
-            WHERE a.appointment_id = :1
+            WHERE c.appointment_id = :1
         """, [appointment_id])
         row = cursor.fetchone()
         if not row:
-            raise HTTPException(404, "Consultation context missing. A secure physical consultation must occur before a prescription.")
+            raise HTTPException(404, "No consultation found for this appointment. Complete the consultation first.")
             
-        consultation_id, patient_id = row
-        
-        # Insert native prescription
+        consultation_id = row[0]
+
+        # Insert prescription header
         sql_rx = """
-            INSERT INTO PRESCRIPTION (consultation_id, doctor_id, patient_id, created_by)
-            VALUES (:1, :2, :3, :4)
-            RETURNING prescription_id INTO :5
+            INSERT INTO PRESCRIPTION (consultation_id, created_by)
+            VALUES (:1, :2)
+            RETURNING prescription_id INTO :3
         """
         rx_var = cursor.var(int)
-        cursor.execute(sql_rx, [consultation_id, doc_id, patient_id, username, rx_var])
+        cursor.execute(sql_rx, [consultation_id, username, rx_var])
         presc_id = rx_var.getvalue()[0]
         
         # Insert Items globally isolated

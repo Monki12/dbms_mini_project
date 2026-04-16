@@ -13,6 +13,7 @@ class ClinicConflictError(ClinicBaseError): pass
 class ClinicValidationError(ClinicBaseError): pass
 class ClinicDBError(ClinicBaseError): pass
 class ClinicAuthError(ClinicBaseError): pass
+class ClinicForbiddenError(ClinicBaseError): pass
 
 def format_envelope(success: bool, data=None, error=None, meta=None) -> dict:
     return {
@@ -40,6 +41,8 @@ async def clinic_exception_handler(request: Request, exc: ClinicBaseError):
         code = status.HTTP_409_CONFLICT
     elif isinstance(exc, ClinicValidationError):
         code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    elif isinstance(exc, ClinicForbiddenError):
+        code = status.HTTP_403_FORBIDDEN
     elif isinstance(exc, ClinicAuthError):
         code = status.HTTP_401_UNAUTHORIZED
     else:

@@ -15,9 +15,9 @@ import requests
 
 BASE = "http://localhost:8000"
 ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "password"
+ADMIN_PASSWORD = "mock_user123"
 DOCTOR_USERNAME = "doc_alice"
-DOCTOR_PASSWORD = "password"
+DOCTOR_PASSWORD = "mock_user123"
 TEST_PHONE = "9000000001"
 
 PASS = "[PASS]"
@@ -130,7 +130,9 @@ if r.status_code == 200:
     if scheduled:
         appt_id = scheduled[0]["appointment_id"]
         r = requests.post(f"{BASE}/api/doctor/appointments/{appt_id}/consultation",
-                          json={"notes": "Integration test note.", "diagnosis": "Test Diagnosis"},
+                          json={"chief_complaint": "Integration test complaint.",
+                                "diagnosis": "Test Diagnosis",
+                                "treatment_notes": "Integration test treatment note."},
                           headers=doctor_headers)
         check(f"B5. POST consultation for appt #{appt_id} -> 200 or 400(dup)",
               r.status_code in (200, 400))

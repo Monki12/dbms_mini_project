@@ -13,14 +13,14 @@ def get_dashboard_stats(current_user: dict = Depends(get_current_user(["ADMIN"])
     with db.cursor() as cursor:
         cursor.execute("SELECT COUNT(*) FROM PATIENT WHERE is_deleted = 0")
         total_patients = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM DOCTOR WHERE is_active = 1")
+
+        cursor.execute("SELECT COUNT(*) FROM DOCTOR WHERE is_deleted = 0")
         total_doctors = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM APPOINTMENT WHERE status = 'scheduled'")
+
+        cursor.execute("SELECT COUNT(*) FROM APPOINTMENT WHERE status = 'SCHEDULED'")
         pending_appointments = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT NVL(SUM(amount), 0) FROM BILLING WHERE payment_status = 'paid'")
+
+        cursor.execute("SELECT NVL(SUM(total_amount), 0) FROM BILLING WHERE payment_status = 'PAID'")
         total_revenue = cursor.fetchone()[0]
         
     stats = {
@@ -36,12 +36,12 @@ def get_revenue_report(current_user: dict = Depends(get_current_user(["ADMIN"]))
     with db.cursor() as cursor:
         # Aggregation of revenue by department using JOINs
         sql = """
-            SELECT d.department_name, NVL(SUM(b.amount), 0) as total_revenue
+            SELECT d.name AS department_name, NVL(SUM(b.total_amount), 0) as total_revenue
             FROM DEPARTMENT d
             LEFT JOIN DOCTOR dr ON d.department_id = dr.department_id
             LEFT JOIN APPOINTMENT a ON dr.doctor_id = a.doctor_id
-            LEFT JOIN BILLING b ON a.appointment_id = b.appointment_id AND b.payment_status = 'paid'
-            GROUP BY d.department_name
+            LEFT JOIN BILLING b ON a.appointment_id = b.appointment_id AND b.payment_status = 'PAID'
+            GROUP BY d.name
             ORDER BY total_revenue DESC
         """
         cursor.execute(sql)

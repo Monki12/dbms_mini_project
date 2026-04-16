@@ -16,9 +16,9 @@ import requests
 
 BASE = "http://localhost:8000"
 ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "password"
+ADMIN_PASSWORD = "mock_user123"
 DOCTOR_USERNAME = "doc_alice"
-DOCTOR_PASSWORD = "password"
+DOCTOR_PASSWORD = "mock_user123"
 
 PASS = "\033[32m[PASS]\033[0m"
 FAIL = "\033[31m[FAIL]\033[0m"

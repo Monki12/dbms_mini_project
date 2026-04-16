@@ -25,6 +25,6 @@ CREATE TABLE TOKEN_BLACKLIST (
 COMMENT ON TABLE TOKEN_BLACKLIST IS 'Invalidated active JWT tokens upon secure logout operations.';
 
 -- Initial BOOTSTRAP seed user
-INSERT INTO CLINIC_USER (username, hashed_password, role, is_active) 
-VALUES ('admin', '$2b$12$K8J1vO9m6i2Y5j1Z2Wl5A.G4uF3Fm1zX4M8zS7yE6yGk9jI9C9cRe', 'ADMIN', 1);
--- (Mock pwd logic: 'password')
+INSERT INTO CLINIC_USER (username, hashed_password, role, is_active)
+VALUES ('admin', '$2b$12$3MPGvH0vhglqEwBPUD9Wh.ysD4Vbndi3vCrRBh2mBc.IdQLR9NIVS', 'ADMIN', 1);
+-- (Mock pwd: 'mock_user123')

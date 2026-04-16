@@ -4,7 +4,7 @@ from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from app.config import settings
-from app.exceptions import ClinicAuthError
+from app.exceptions import ClinicAuthError, ClinicForbiddenError
 from app.database import get_db
 import oracledb
 
@@ -36,7 +36,7 @@ def get_current_user(required_roles: List[str] = None) -> Callable:
                 
             # 3. RBAC Assessment
             if required_roles and role not in required_roles:
-                raise ClinicAuthError("Insufficient permissions to access this clinical domain.")
+                raise ClinicForbiddenError("Insufficient permissions to access this clinical domain.")
 
             # 4. Bind resolved identity downstream
             linked_entity = payload.get("linked_entity_id")

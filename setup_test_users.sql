@@ -4,8 +4,8 @@
 -- Run this script ONCE after the seed data (task14_seed_data.sql)
 -- to create staff logins for Doctor Portal integration testing.
 --
--- All users have password: password
--- Hash: $2b$12$K8J1vO9m6i2Y5j1Z2Wl5A.G4uF3Fm1zX4M8zS7yE6yGk9jI9C9cRe
+-- All users have password: mock_user123
+-- Hash: $2b$12$3MPGvH0vhglqEwBPUD9Wh.ysD4Vbndi3vCrRBh2mBc.IdQLR9NIVS
 -- (bcrypt of 'password', matching the admin seed in task17_auth_ddl.sql)
 --
 -- To regenerate the hash for a different password:
@@ -14,7 +14,7 @@
 -- =============================================================
 
 DECLARE
-    v_hash VARCHAR2(255) := '$2b$12$K8J1vO9m6i2Y5j1Z2Wl5A.G4uF3Fm1zX4M8zS7yE6yGk9jI9C9cRe';
+    v_hash VARCHAR2(255) := '$2b$12$3MPGvH0vhglqEwBPUD9Wh.ysD4Vbndi3vCrRBh2mBc.IdQLR9NIVS';
     -- Resolve actual doctor_ids from seed data
     v_doc1_id NUMBER;
     v_doc2_id NUMBER;
