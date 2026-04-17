@@ -20,7 +20,7 @@ def get_dashboard_stats(current_user: dict = Depends(get_current_user(["ADMIN"])
         cursor.execute("SELECT COUNT(*) FROM APPOINTMENT WHERE status = 'SCHEDULED'")
         pending_appointments = cursor.fetchone()[0]
 
-        cursor.execute("SELECT NVL(SUM(total_amount), 0) FROM BILLING WHERE payment_status = 'PAID'")
+        cursor.execute("SELECT NVL(SUM(amount_paid), 0) FROM BILLING WHERE payment_status IN ('PAID','PARTIAL')")
         total_revenue = cursor.fetchone()[0]
         
     stats = {
@@ -34,17 +34,26 @@ def get_dashboard_stats(current_user: dict = Depends(get_current_user(["ADMIN"])
 @router.get("/revenue-report")
 def get_revenue_report(current_user: dict = Depends(get_current_user(["ADMIN"])), db: oracledb.Connection = Depends(get_db)):
     with db.cursor() as cursor:
-        # Aggregation of revenue by department using JOINs
+        try:
+            cursor.execute("BEGIN DBMS_MVIEW.REFRESH('V_DEPT_REVENUE','C'); END;")
+        except Exception:
+            pass  # mat-view refresh is best-effort
+
         sql = """
-            SELECT d.name AS department_name, NVL(SUM(b.total_amount), 0) as total_revenue
+            SELECT d.name AS department_name,
+                   NVL(SUM(b.amount_paid), 0) AS total_revenue,
+                   NVL(SUM(b.total_amount), 0) AS total_billed,
+                   COUNT(DISTINCT b.billing_id) AS invoice_count
             FROM DEPARTMENT d
-            LEFT JOIN DOCTOR dr ON d.department_id = dr.department_id
-            LEFT JOIN APPOINTMENT a ON dr.doctor_id = a.doctor_id
-            LEFT JOIN BILLING b ON a.appointment_id = b.appointment_id AND b.payment_status = 'PAID'
+            LEFT JOIN DOCTOR dr ON d.department_id = dr.department_id AND dr.is_deleted = 0
+            LEFT JOIN APPOINTMENT a ON dr.doctor_id = a.doctor_id AND a.is_deleted = 0
+            LEFT JOIN BILLING b ON a.appointment_id = b.appointment_id
+                AND b.payment_status IN ('PAID','PARTIAL') AND b.is_deleted = 0
             GROUP BY d.name
             ORDER BY total_revenue DESC
         """
         cursor.execute(sql)
-        rows = [{"department": row[0], "revenue": row[1]} for row in cursor.fetchall()]
-        
+        cols = [c[0].lower() for c in cursor.description]
+        rows = [dict(zip(cols, r)) for r in cursor.fetchall()]
+
     return format_envelope(True, data=rows)

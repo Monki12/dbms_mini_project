@@ -27,6 +27,7 @@ import AdminLayout from './portals/admin/AdminLayout';
 import AdminDashboard from './portals/admin/AdminDashboard';
 import AdminLab from './portals/admin/AdminLab';
 import AdminPharmacy from './portals/admin/AdminPharmacy';
+import AdminEmergencyQueue from './portals/admin/AdminEmergencyQueue';
 import PatientsList from './features/patients/PatientsList';
 import AppointmentsList from './features/appointments/AppointmentsList';
 import BillingDashboard from './features/billing/BillingDashboard';
@@ -129,6 +130,7 @@ export default function App() {
           <Route path="billing" element={<BillingDashboard />} />
           <Route path="lab" element={<AdminLab />} />
           <Route path="pharmacy" element={<AdminPharmacy />} />
+          <Route path="emergency" element={<AdminEmergencyQueue />} />
         </Route>
 
         {/* Fallback */}

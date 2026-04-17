@@ -67,7 +67,7 @@ def get_appointments(current_user: dict = Depends(get_current_user(["PATIENT"]))
         try:
             cursor.execute("""
                 SELECT a.appointment_id, a.appt_date, a.slot_start, a.status, a.reason_for_visit,
-                       d.full_name AS doctor_name, d.specialty,
+                       d.full_name AS doctor_name, d.specialisation AS specialty,
                        dep.name AS department_name
                 FROM APPOINTMENT a
                 LEFT JOIN DOCTOR d ON a.doctor_id = d.doctor_id
@@ -80,7 +80,7 @@ def get_appointments(current_user: dict = Depends(get_current_user(["PATIENT"]))
             cursor.execute("""
                 SELECT a.appointment_id, a.appt_date, a.slot_start, a.status,
                        NULL AS reason_for_visit,
-                       d.full_name AS doctor_name, d.specialty,
+                       d.full_name AS doctor_name, d.specialisation AS specialty,
                        dep.name AS department_name
                 FROM APPOINTMENT a
                 LEFT JOIN DOCTOR d ON a.doctor_id = d.doctor_id
@@ -105,7 +105,7 @@ def list_doctors(current_user: dict = Depends(get_current_user(["PATIENT"])), db
     """Available doctors for patient appointment booking."""
     with db.cursor() as cursor:
         cursor.execute("""
-            SELECT d.doctor_id, d.full_name, d.specialty, d.qualification, d.experience_years,
+            SELECT d.doctor_id, d.full_name, d.specialisation AS specialty, d.qualification, d.years_of_experience AS experience_years,
                    dep.name AS department_name, dep.department_id
             FROM DOCTOR d
             JOIN DEPARTMENT dep ON d.department_id = dep.department_id
@@ -157,11 +157,57 @@ def book_appointment(
         db.commit()
     return format_envelope(True, data={"appointment_id": appt_id_var.getvalue()[0]})
 
+
+@router.patch("/appointments/{appointment_id}/cancel")
+def cancel_appointment(
+    appointment_id: int,
+    current_user: dict = Depends(get_current_user(["PATIENT"])),
+    db: oracledb.Connection = Depends(get_db),
+):
+    pid = current_user["linked_entity_id"]
+    with db.cursor() as cursor:
+        cursor.execute("""
+            UPDATE APPOINTMENT
+            SET status = 'CANCELLED', updated_at = SYSTIMESTAMP
+            WHERE appointment_id = :1
+              AND patient_id = :2
+              AND status = 'SCHEDULED'
+        """, [appointment_id, pid])
+        if cursor.rowcount == 0:
+            raise HTTPException(404, "Appointment not found or cannot be cancelled.")
+        db.commit()
+    return format_envelope(True, data={"appointment_id": appointment_id, "status": "CANCELLED"})
+
 @router.get("/medical-records")
 def get_medical_records(current_user: dict = Depends(get_current_user(["PATIENT"])), db: oracledb.Connection = Depends(get_db)):
     pid = current_user['linked_entity_id']
     patient = PatientService.get_detail(db, pid)
     return format_envelope(True, data=patient.get("medical_record", {}))
+
+
+@router.get("/consultations")
+def get_consultation_history(
+    current_user: dict = Depends(get_current_user(["PATIENT"])),
+    db: oracledb.Connection = Depends(get_db),
+):
+    pid = current_user['linked_entity_id']
+    with db.cursor() as cursor:
+        cursor.execute("""
+            SELECT c.consultation_id, c.chief_complaint, c.diagnosis,
+                   c.treatment_notes, c.created_at,
+                   a.appt_date, a.appointment_id,
+                   d.full_name AS doctor_name, d.specialisation AS specialty,
+                   dep.name AS department_name
+            FROM CONSULTATION c
+            JOIN APPOINTMENT a ON c.appointment_id = a.appointment_id
+            JOIN DOCTOR d ON a.doctor_id = d.doctor_id
+            LEFT JOIN DEPARTMENT dep ON a.department_id = dep.department_id
+            WHERE a.patient_id = :pid AND a.is_deleted = 0
+            ORDER BY a.appt_date DESC, c.created_at DESC
+        """, {"pid": pid})
+        cols = [col[0].lower() for col in cursor.description]
+        rows = [dict(zip(cols, r)) for r in cursor.fetchall()]
+    return format_envelope(True, data=rows)
 
 @router.get("/prescriptions")
 def get_prescriptions(current_user: dict = Depends(get_current_user(["PATIENT"])), db: oracledb.Connection = Depends(get_db)):

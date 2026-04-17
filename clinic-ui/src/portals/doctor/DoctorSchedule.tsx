@@ -102,6 +102,10 @@ export default function DoctorSchedule() {
   const [vitalsError, setVitalsError] = useState('');
   const [vitalsDone, setVitalsDone] = useState<Set<number>>(new Set());
 
+  // Mark Complete
+  const [completeLoading, setCompleteLoading] = useState<number | null>(null);
+  const [completeDone, setCompleteDone] = useState<Set<number>>(new Set());
+
   // Lab order modal
   const [labModal, setLabModal] = useState<{ apptId: number; consultId: number } | null>(null);
   const [labCatalogue, setLabCatalogue] = useState<LabTest[]>([]);
@@ -120,6 +124,20 @@ export default function DoctorSchedule() {
       .then((res) => setAppointments(res.data.data))
       .catch(console.error)
       .finally(() => setLoading(false));
+  };
+
+  // ── Mark Complete ─────────────────────────────────────────────
+  const handleMarkComplete = async (apptId: number) => {
+    setCompleteLoading(apptId);
+    try {
+      await apiClient.patch(`/api/doctor/appointments/${apptId}/complete`);
+      setCompleteDone((prev) => new Set(prev).add(apptId));
+      fetchAppointments();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || err.response?.data?.error || 'Failed to mark complete.');
+    } finally {
+      setCompleteLoading(null);
+    }
   };
 
   // ── Consultation ──────────────────────────────────────────────
@@ -340,6 +358,16 @@ export default function DoctorSchedule() {
                                   className="flex items-center gap-1 text-xs font-bold text-teal-600 hover:text-white hover:bg-teal-600 px-3 py-1.5 rounded-md border border-teal-200 transition-colors"
                                 >
                                   <FlaskConical className="w-3.5 h-3.5" /> Lab Test
+                                </button>
+                              )}
+                              {consultId && !isCompleted && !completeDone.has(a.appointment_id) && (
+                                <button
+                                  onClick={() => handleMarkComplete(a.appointment_id)}
+                                  disabled={completeLoading === a.appointment_id}
+                                  className="flex items-center gap-1 text-xs font-bold text-green-600 hover:text-white hover:bg-green-600 px-3 py-1.5 rounded-md border border-green-200 transition-colors disabled:opacity-50"
+                                >
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  {completeLoading === a.appointment_id ? 'Saving...' : 'Mark Complete'}
                                 </button>
                               )}
                             </>

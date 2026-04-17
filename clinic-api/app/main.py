@@ -84,7 +84,7 @@ def create_app() -> FastAPI:
     from app.routers import (
         patients, doctors, appointments, departments, auth,
         billing, prescriptions, patient_auth, patient_portal, doctor_portal, admin_portal,
-        lab, vitals, pharmacy
+        lab, vitals, pharmacy, notifications, emergency
     )
     app.include_router(auth.router)
     app.include_router(patients.router)
@@ -101,9 +101,11 @@ def create_app() -> FastAPI:
     app.include_router(admin_portal.router, prefix="/api/admin")
 
     # V3: Extended clinical services
-    app.include_router(lab.router,      prefix="/api")
-    app.include_router(vitals.router,   prefix="/api")
-    app.include_router(pharmacy.router, prefix="/api")
+    app.include_router(lab.router,           prefix="/api")
+    app.include_router(vitals.router,        prefix="/api")
+    app.include_router(pharmacy.router,      prefix="/api")
+    app.include_router(notifications.router, prefix="/api")
+    app.include_router(emergency.router,     prefix="/api")
     
     return app
 

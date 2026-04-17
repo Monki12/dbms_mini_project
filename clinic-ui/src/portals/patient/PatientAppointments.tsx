@@ -61,6 +61,8 @@ export default function PatientAppointments() {
   const [bookingError, setBookingError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
+  const [cancelLoading, setCancelLoading] = useState<number | null>(null);
+
   const fetchAppointments = () => {
     setLoading(true);
     apiClient.get('/api/patient/appointments')
@@ -104,6 +106,19 @@ export default function PatientAppointments() {
       setBookingError(err.response?.data?.detail || err.response?.data?.error || 'Booking failed.');
     } finally {
       setBookingLoading(false);
+    }
+  };
+
+  const handleCancel = async (id: number) => {
+    if (!window.confirm('Cancel this appointment?')) return;
+    setCancelLoading(id);
+    try {
+      await apiClient.patch(`/api/patient/appointments/${id}/cancel`);
+      fetchAppointments();
+    } catch (err: any) {
+      alert(err.response?.data?.detail || err.response?.data?.error || 'Failed to cancel.');
+    } finally {
+      setCancelLoading(null);
     }
   };
 
@@ -168,9 +183,20 @@ export default function PatientAppointments() {
                       </div>
                     </div>
                   </div>
-                  <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border flex-shrink-0 ${st.cls}`}>
-                    {st.icon}{st.label}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border flex-shrink-0 ${st.cls}`}>
+                      {st.icon}{st.label}
+                    </span>
+                    {key === 'scheduled' && (
+                      <button
+                        onClick={() => handleCancel(a.appointment_id)}
+                        disabled={cancelLoading === a.appointment_id}
+                        className="text-xs font-bold text-red-500 hover:text-white hover:bg-red-500 px-2.5 py-1 rounded-md border border-red-200 transition-colors disabled:opacity-50"
+                      >
+                        {cancelLoading === a.appointment_id ? 'Cancelling...' : 'Cancel'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

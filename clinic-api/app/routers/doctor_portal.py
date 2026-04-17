@@ -123,4 +123,70 @@ def create_prescription(appointment_id: int, data: PrescriptionCreate, current_u
             """, [presc_id, item.medication_name, item.dosage, item.frequency, item.duration, item.quantity, username])
             
         db.commit()
-        return format_envelope(True, {"prescription_id": presc_id, "status": "Script effectively committed to DB isolated vault."})
+        return format_envelope(True, {"prescription_id": presc_id, "status": "Prescription saved."})
+
+
+@router.patch("/appointments/{appointment_id}/complete")
+def complete_appointment(
+    appointment_id: int,
+    current_user: dict = Depends(get_current_user(["DOCTOR"])),
+    db: oracledb.Connection = Depends(get_db),
+):
+    with db.cursor() as cursor:
+        cursor.execute("""
+            UPDATE APPOINTMENT
+            SET status = 'COMPLETED', updated_at = SYSTIMESTAMP
+            WHERE appointment_id = :1 AND status = 'SCHEDULED'
+        """, [appointment_id])
+        if cursor.rowcount == 0:
+            raise HTTPException(404, "Appointment not found or already completed.")
+        db.commit()
+    return format_envelope(True, data={"appointment_id": appointment_id, "status": "COMPLETED"})
+
+
+# ── Doctor Leave ───────────────────────────────────────────────
+
+class LeaveCreate(BaseModel):
+    start_date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+    end_date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+    reason: Optional[str] = Field(default=None, max_length=500)
+
+
+@router.get("/leave")
+def get_my_leave(
+    current_user: dict = Depends(get_current_user(["DOCTOR"])),
+    db: oracledb.Connection = Depends(get_db),
+):
+    doc_id = current_user["linked_entity_id"]
+    with db.cursor() as cursor:
+        cursor.execute("""
+            SELECT leave_id, start_ts, end_ts, reason, approved, created_at
+            FROM DOCTOR_LEAVE
+            WHERE doctor_id = :1
+            ORDER BY start_ts DESC
+        """, [doc_id])
+        cols = [c[0].lower() for c in cursor.description]
+        rows = [dict(zip(cols, r)) for r in cursor.fetchall()]
+    return format_envelope(True, data=rows)
+
+
+@router.post("/leave")
+def request_leave(
+    data: LeaveCreate,
+    current_user: dict = Depends(get_current_user(["DOCTOR"])),
+    db: oracledb.Connection = Depends(get_db),
+):
+    doc_id = current_user["linked_entity_id"]
+    username = current_user.get("username", f"DOC_{doc_id}")
+    with db.cursor() as cursor:
+        leave_id_var = cursor.var(int)
+        cursor.execute("""
+            INSERT INTO DOCTOR_LEAVE (doctor_id, start_ts, end_ts, reason, approved, created_by)
+            VALUES (:1,
+                   TO_TIMESTAMP(:2 || ' 00:00:00','YYYY-MM-DD HH24:MI:SS'),
+                   TO_TIMESTAMP(:3 || ' 23:59:59','YYYY-MM-DD HH24:MI:SS'),
+                   :4, 1, :5)
+            RETURNING leave_id INTO :6
+        """, [doc_id, data.start_date, data.end_date, data.reason, username, leave_id_var])
+        db.commit()
+    return format_envelope(True, data={"leave_id": leave_id_var.getvalue()[0]})

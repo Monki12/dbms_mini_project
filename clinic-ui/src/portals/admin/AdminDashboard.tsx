@@ -10,8 +10,10 @@ interface Stats {
 }
 
 interface RevenueRow {
-  department: string;
-  revenue: number;
+  department_name: string;
+  total_revenue: number;
+  total_billed: number;
+  invoice_count: number;
 }
 
 export default function AdminDashboard() {
@@ -32,7 +34,7 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const maxRevenue = Math.max(...revenue.map((r) => Number(r.revenue)), 1);
+  const maxRevenue = Math.max(...revenue.map((r) => Number(r.total_billed)), 1);
 
   const statCards = stats
     ? [
@@ -88,19 +90,25 @@ export default function AdminDashboard() {
               ) : (
                 <div className="space-y-4">
                   {revenue.map((row) => {
-                    const pct = (Number(row.revenue) / maxRevenue) * 100;
+                    const billedPct = (Number(row.total_billed) / maxRevenue) * 100;
+                    const collectedPct = Number(row.total_billed) > 0
+                      ? (Number(row.total_revenue) / Number(row.total_billed)) * billedPct
+                      : 0;
                     return (
-                      <div key={row.department}>
+                      <div key={row.department_name}>
                         <div className="flex items-center justify-between text-sm mb-1.5">
-                          <span className="font-semibold text-slate-700">{row.department}</span>
-                          <span className="font-bold text-slate-800">₹{Number(row.revenue).toLocaleString('en-IN')}</span>
+                          <span className="font-semibold text-slate-700">{row.department_name}</span>
+                          <div className="text-right">
+                            <span className="font-bold text-slate-800">₹{Number(row.total_revenue).toLocaleString('en-IN')}</span>
+                            <span className="text-xs text-slate-400 ml-1">collected</span>
+                            <span className="text-xs text-slate-400 ml-2">/ ₹{Number(row.total_billed).toLocaleString('en-IN')} billed</span>
+                          </div>
                         </div>
-                        <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                          <div
-                            className="bg-primary-500 h-3 rounded-full transition-all duration-700 ease-out"
-                            style={{ width: `${pct}%` }}
-                          />
+                        <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden relative">
+                          <div className="bg-primary-200 h-3 rounded-full absolute" style={{ width: `${billedPct}%` }} />
+                          <div className="bg-primary-500 h-3 rounded-full absolute transition-all duration-700" style={{ width: `${collectedPct}%` }} />
                         </div>
+                        <p className="text-xs text-slate-400 mt-0.5">{row.invoice_count} invoice{row.invoice_count !== 1 ? 's' : ''}</p>
                       </div>
                     );
                   })}
