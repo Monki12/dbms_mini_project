@@ -13,6 +13,9 @@ import PatientDashboard from './portals/patient/PatientDashboard';
 import PatientAppointments from './portals/patient/PatientAppointments';
 import PatientMedicalRecords from './portals/patient/PatientMedicalRecords';
 import PatientPrescriptions from './portals/patient/PatientPrescriptions';
+import PatientLabResults from './portals/patient/PatientLabResults';
+import PatientVitals from './portals/patient/PatientVitals';
+import PatientPharmacy from './portals/patient/PatientPharmacy';
 
 // Doctor portal
 import DoctorLayout from './portals/doctor/DoctorLayout';
@@ -22,6 +25,8 @@ import DoctorPatients from './portals/doctor/DoctorPatients';
 // Admin portal (layout + dashboard + reused feature pages)
 import AdminLayout from './portals/admin/AdminLayout';
 import AdminDashboard from './portals/admin/AdminDashboard';
+import AdminLab from './portals/admin/AdminLab';
+import AdminPharmacy from './portals/admin/AdminPharmacy';
 import PatientsList from './features/patients/PatientsList';
 import AppointmentsList from './features/appointments/AppointmentsList';
 import BillingDashboard from './features/billing/BillingDashboard';
@@ -91,6 +96,9 @@ export default function App() {
           <Route path="appointments" element={<PatientAppointments />} />
           <Route path="medical-records" element={<PatientMedicalRecords />} />
           <Route path="prescriptions" element={<PatientPrescriptions />} />
+          <Route path="lab-results" element={<PatientLabResults />} />
+          <Route path="vitals" element={<PatientVitals />} />
+          <Route path="pharmacy" element={<PatientPharmacy />} />
         </Route>
 
         {/* ── Doctor Portal ── */}
@@ -119,6 +127,8 @@ export default function App() {
           <Route path="patients" element={<PatientsList />} />
           <Route path="appointments" element={<AppointmentsList />} />
           <Route path="billing" element={<BillingDashboard />} />
+          <Route path="lab" element={<AdminLab />} />
+          <Route path="pharmacy" element={<AdminPharmacy />} />
         </Route>
 
         {/* Fallback */}

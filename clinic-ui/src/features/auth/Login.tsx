@@ -10,7 +10,10 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const { setAuth, logout } = useAuthStore();
+
+  // Clear any stale patient session so it doesn't interfere with role-based routing
+  React.useEffect(() => { logout(); }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,8 +33,8 @@ export default function Login() {
           { user_id, role, linked_entity_id, display_name: username },
           refresh_token
         );
-        if (role === 'DOCTOR') navigate('/doctor');
-        else navigate('/admin');
+        if (role === 'DOCTOR') navigate('/doctor', { replace: true });
+        else navigate('/admin', { replace: true });
       } else {
         setError('Invalid credentials.');
       }

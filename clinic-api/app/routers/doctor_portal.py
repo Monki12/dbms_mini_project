@@ -30,11 +30,11 @@ def get_doctor_appointments(current_user: dict = Depends(get_current_user(["DOCT
     with db.cursor() as cursor:
         cursor.execute("""
             SELECT a.appointment_id, a.patient_id, a.doctor_id,
-                   a.appt_date, a.slot_start, a.status,
-                   p.full_name as patient_name
+                   a.appt_date, a.slot_start, a.status, a.reason_for_visit,
+                   p.full_name as patient_name, p.phone_number, p.gender, p.dob
             FROM APPOINTMENT a
             JOIN PATIENT p ON a.patient_id = p.patient_id
-            ORDER BY a.appt_date DESC, a.slot_start DESC
+            ORDER BY a.appt_date ASC, a.slot_start ASC
         """)
         columns = [col[0].lower() for col in cursor.description]
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]

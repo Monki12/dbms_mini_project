@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Shield, LayoutDashboard, Users, Calendar, DollarSign, LogOut } from 'lucide-react';
+import { Shield, LayoutDashboard, Users, Calendar, DollarSign, LogOut, FlaskConical, Pill } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import apiClient from '../../api/client';
 
@@ -9,6 +9,8 @@ const navItems = [
   { to: '/admin/patients', label: 'Patient Directory', icon: Users, end: false },
   { to: '/admin/appointments', label: 'Appointments', icon: Calendar, end: false },
   { to: '/admin/billing', label: 'Revenue & Billing', icon: DollarSign, end: false },
+  { to: '/admin/lab', label: 'Lab Management', icon: FlaskConical, end: false },
+  { to: '/admin/pharmacy', label: 'Pharmacy', icon: Pill, end: false },
 ];
 
 export default function AdminLayout() {

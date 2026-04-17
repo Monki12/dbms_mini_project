@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Activity, Calendar, FileText, Pill, LogOut, LayoutDashboard } from 'lucide-react';
+import { Activity, Calendar, FileText, Pill, LogOut, LayoutDashboard, FlaskConical, Heart, ShoppingBag } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import apiClient from '../../api/client';
 
@@ -9,6 +9,9 @@ const navItems = [
   { to: '/patient/appointments', label: 'My Appointments', icon: Calendar, end: false },
   { to: '/patient/medical-records', label: 'Medical Records', icon: FileText, end: false },
   { to: '/patient/prescriptions', label: 'Prescriptions', icon: Pill, end: false },
+  { to: '/patient/lab-results', label: 'Lab Results', icon: FlaskConical, end: false },
+  { to: '/patient/vitals', label: 'Vitals History', icon: Heart, end: false },
+  { to: '/patient/pharmacy', label: 'Pharmacy', icon: ShoppingBag, end: false },
 ];
 
 export default function PatientLayout() {

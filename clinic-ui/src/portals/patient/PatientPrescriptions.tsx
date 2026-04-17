@@ -14,7 +14,9 @@ interface Prescription {
   prescription_id: number;
   consultation_id: number;
   created_at: string;
-  items?: PrescriptionItem[];
+  doctor_name: string;
+  appt_date: string;
+  items: PrescriptionItem[];
 }
 
 export default function PatientPrescriptions() {
@@ -60,9 +62,15 @@ export default function PatientPrescriptions() {
                     <Pill className="w-5 h-5 text-amber-600" />
                   </div>
                   <div className="text-left">
-                    <p className="font-bold text-slate-800">Prescription #{rx.prescription_id}</p>
+                    <p className="font-bold text-slate-800">
+                      Prescription #{rx.prescription_id}
+                      <span className="ml-2 text-xs font-normal text-slate-400">{rx.items.length} item{rx.items.length !== 1 ? 's' : ''}</span>
+                    </p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {rx.created_at
+                      {rx.doctor_name ? `Dr. ${rx.doctor_name} · ` : ''}
+                      {rx.appt_date
+                        ? new Date(rx.appt_date.split('T')[0] + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                        : rx.created_at
                         ? new Date(rx.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
                         : 'Date unavailable'}
                     </p>
