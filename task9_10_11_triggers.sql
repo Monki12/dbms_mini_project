@@ -1,5 +1,17 @@
 -- TASKS 9, 10, 11: Transactional Automation and Auditing Triggers
+-- Trigger Name                         | Event                          | Purpose                                                                 | Type
+-- ---------------------------------------------------------------------------------------------------------------------------------------------------------
+-- TRG_CREATE_BILLING                  | AFTER INSERT ON APPOINTMENT    | Auto-creates a BILLING row with snapshotted consultation fee and GST=18% | State automation
+-- TRG_BILLING_STATUS                  | BEFORE UPDATE ON BILLING       | Sets payment_status = PENDING / PARTIAL / PAID based on amount_paid       | State automation
+-- TRG_AUDIT_PATIENT                   | AFTER INSERT/UPDATE/DELETE     | Writes JSON old/new values to AUDIT_LOG for immutable audit trail         | Audit
 
+-- TRG_DISPENSING_DEDUCT_STOCK         | AFTER INSERT ON DISPENSING     | Decrements PHARMACY_ITEM.stock_quantity by quantity_dispensed             | Business rule
+-- TRG_DOCTOR_LEAVE_BLOCK_BOOKING      | BEFORE INSERT ON APPOINTMENT   | Blocks booking if it overlaps APPROVED doctor leave (raises ORA-20010)    | Business rule
+
+-- TRG_EMERGENCY_FANOUT                | AFTER INSERT ON EMERGENCY_REQ  | Notifies ALL doctors if severity=CRITICAL; else notifies dept doctors     | Notification
+-- TRG_CANCEL_VOIDS_INVOICE            | AFTER UPDATE ON APPOINTMENT    | Sets BILLING.payment_status = 'VOID' when appointment is cancelled        | State automation
+-- TRG_CANCEL_NOTIFY_DOCTOR            | AFTER UPDATE ON APPOINTMENT    | Inserts cancellation notice into DOCTOR_NOTIFICATION                      | Notification
+-- TRG_LAB_RESULT_NOTIFY               | AFTER INSERT ON LAB_RESULT     | Inserts LAB_READY notification into PATIENT_NOTIFICATION                  | Notification
 -- ======================================================================
 -- TASK 9: TRIGGER: AUTOMATE BILLING RECORD CREATION
 -- ======================================================================

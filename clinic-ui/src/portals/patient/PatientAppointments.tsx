@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import apiClient from '../../api/client';
-import { Calendar, Clock, CheckCircle, XCircle, Activity, Plus, X, AlertCircle, Stethoscope } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, XCircle, Activity, Plus, X, AlertCircle, Stethoscope, Sparkles } from 'lucide-react';
+import SymptomIntakeModal from './SymptomIntakeModal';
 
 interface Appointment {
   appointment_id: number;
@@ -62,6 +63,7 @@ export default function PatientAppointments() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
   const [cancelLoading, setCancelLoading] = useState<number | null>(null);
+  const [showSymptomModal, setShowSymptomModal] = useState(false);
 
   const fetchAppointments = () => {
     setLoading(true);
@@ -123,6 +125,7 @@ export default function PatientAppointments() {
   };
 
   const today = new Date().toISOString().split('T')[0];
+  const todayPlus30 = new Date(Date.now() + 30 * 86400_000).toISOString().split('T')[0];
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -131,8 +134,8 @@ export default function PatientAppointments() {
           <h1 className="text-2xl font-bold text-slate-900">My Appointments</h1>
           <p className="text-sm text-slate-500 mt-1">Your upcoming and past clinic visits.</p>
         </div>
-        <button onClick={openBooking} className="btn-primary flex items-center gap-2 text-sm">
-          <Plus className="w-4 h-4" /> Book Appointment
+        <button onClick={() => setShowSymptomModal(true)} className="btn-primary flex items-center gap-2 text-sm bg-emerald-600 hover:bg-emerald-700">
+          <Sparkles className="w-4 h-4" /> Book Consultation Slot
         </button>
       </div>
 
@@ -204,7 +207,16 @@ export default function PatientAppointments() {
         </div>
       )}
 
-      {/* ── Booking Modal ── */}
+      {/* ── AI Symptom Intake Modal ── */}
+      {showSymptomModal && (
+        <SymptomIntakeModal
+          onClose={() => setShowSymptomModal(false)}
+          onBooked={() => { fetchAppointments(); setShowSymptomModal(false); }}
+          onFallbackToManual={() => { setShowSymptomModal(false); openBooking(); }}
+        />
+      )}
+
+      {/* ── Manual Booking Modal ── */}
       {showBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
@@ -253,7 +265,7 @@ export default function PatientAppointments() {
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Date</label>
-                  <input type="date" required min={today} className="input-field"
+                  <input type="date" required min={today} max={todayPlus30} className="input-field"
                     value={form.appt_date}
                     onChange={(e) => setForm((f) => ({ ...f, appt_date: e.target.value }))} />
                 </div>

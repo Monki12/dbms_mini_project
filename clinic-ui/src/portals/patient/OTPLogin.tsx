@@ -72,23 +72,26 @@ export default function PatientLogin() {
                 <input
                   type="tel"
                   required
-                  minLength={10}
-                  maxLength={15}
-                  pattern="\d+"
+                  inputMode="numeric"
+                  maxLength={10}
+                  pattern="[0-9]{10}"
                   className="input-field pl-11 block w-full py-2.5 focus:ring-emerald-500/20 focus:border-emerald-500"
                   placeholder="9876543210"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 />
               </div>
-              <p className="mt-1.5 text-xs text-slate-400">
-                Enter the phone number linked to your patient record.
-              </p>
+              {phone.length > 0 && phone.length !== 10 && (
+                <p className="mt-1 text-xs text-red-500 font-medium">Enter a 10-digit phone number ({phone.length}/10)</p>
+              )}
+              {(phone.length === 0 || phone.length === 10) && (
+                <p className="mt-1.5 text-xs text-slate-400">Enter the phone number linked to your patient record.</p>
+              )}
             </div>
 
             <button
               type="submit"
-              disabled={isLoading || phone.length < 10}
+              disabled={isLoading || phone.length !== 10}
               className="w-full py-3 flex justify-center items-center gap-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 rounded-lg transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (

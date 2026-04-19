@@ -6,6 +6,33 @@ import { CheckCircle, AlertCircle, User } from 'lucide-react';
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'];
 const GENDERS = ['Male', 'Female', 'Other'];
 
+function PhoneInput({ label, value, onChange, required = true }: {
+  label: string; value: string; onChange: (v: string) => void; required?: boolean;
+}) {
+  const [touched, setTouched] = useState(false);
+  const invalid = touched && value.length > 0 && value.length !== 10;
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-slate-700 mb-1">{label}</label>
+      <input
+        type="tel"
+        required={required}
+        inputMode="numeric"
+        maxLength={10}
+        pattern="[0-9]{10}"
+        className={`input-field ${invalid ? 'border-red-400 focus:border-red-500' : ''}`}
+        placeholder="9876543210"
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 10))}
+        onBlur={() => setTouched(true)}
+      />
+      {invalid && (
+        <p className="mt-1 text-xs text-red-500 font-medium">Enter a 10-digit phone number ({value.length}/10)</p>
+      )}
+    </div>
+  );
+}
+
 export default function ProfileComplete() {
   const navigate = useNavigate();
   const [error, setError] = useState('');
@@ -121,15 +148,11 @@ export default function ProfileComplete() {
                       placeholder="Raj Sharma"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Phone</label>
-                    <input
-                      type="tel" required className="input-field"
-                      value={form.emergency_contact_phone}
-                      onChange={(e) => set('emergency_contact_phone', e.target.value)}
-                      placeholder="9876500000"
-                    />
-                  </div>
+                  <PhoneInput
+                    label="Phone"
+                    value={form.emergency_contact_phone}
+                    onChange={(v) => set('emergency_contact_phone', v)}
+                  />
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1">Relation</label>
                     <input
@@ -146,8 +169,8 @@ export default function ProfileComplete() {
             <div className="pt-4">
               <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full py-3 flex justify-center items-center gap-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 rounded-lg transition-all shadow-sm"
+                disabled={isLoading || form.emergency_contact_phone.length !== 10}
+                className="w-full py-3 flex justify-center items-center gap-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 rounded-lg transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>

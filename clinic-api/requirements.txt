@@ -18,5 +18,8 @@ python-multipart==0.0.9
 slowapi==0.1.9
 httpx==0.27.0
 
+# AI / Doctor suggestion
+google-generativeai==0.8.3
+
 # Testing
 pytest==8.2.2

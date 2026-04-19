@@ -33,9 +33,10 @@ class PatientBase(BaseModel):
     @field_validator('contact_number', 'emergency_contact_phone')
     @classmethod
     def phone_format(cls, v: str):
-        if len(v) < 5 or not any(char.isdigit() for char in v):
-            raise ValueError("Phone format invalid; must contain realistic scalar digits.")
-        return v
+        cleaned = v.strip()
+        if not (cleaned.isdigit() and len(cleaned) == 10):
+            raise ValueError('Phone must be exactly 10 digits (numbers only, no spaces or dashes).')
+        return cleaned
 
 class PatientCreate(PatientBase, MedicalRecordBase):
     pass
@@ -65,6 +66,16 @@ class PatientProfileComplete(BaseModel):
         if v >= date.today():
             raise ValueError("Date of birth must be in the past.")
         return v
+
+    @field_validator('contact_number', 'emergency_contact_phone')
+    @classmethod
+    def phone_format_profile(cls, v):
+        if v is None:
+            return v
+        cleaned = str(v).strip()
+        if cleaned and not (cleaned.isdigit() and len(cleaned) == 10):
+            raise ValueError('Phone must be exactly 10 digits (numbers only, no spaces or dashes).')
+        return cleaned or None
 
 class MedicalRecordUpdate(MedicalRecordBase):
     pass

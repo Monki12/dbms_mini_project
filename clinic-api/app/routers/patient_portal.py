@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
+from datetime import date as date_type, timedelta
 import oracledb
 
 from app.database import get_db, execute_query
@@ -124,6 +125,18 @@ def book_appointment(
     db: oracledb.Connection = Depends(get_db)
 ):
     pid = current_user['linked_entity_id']
+
+    # Date-range validation (belt-and-braces alongside DB trigger)
+    try:
+        appt_date_obj = date_type.fromisoformat(data.appt_date)
+    except ValueError:
+        raise HTTPException(400, "Invalid appointment date format. Use YYYY-MM-DD.")
+    today = date_type.today()
+    if appt_date_obj < today:
+        raise HTTPException(400, "Appointment date cannot be in the past.")
+    if appt_date_obj > today + timedelta(days=30):
+        raise HTTPException(400, "Appointments can only be booked up to 30 days in advance.")
+
     with db.cursor() as cursor:
         cursor.execute(
             "SELECT department_id FROM DOCTOR WHERE doctor_id = :1 AND is_deleted = 0",
@@ -136,25 +149,40 @@ def book_appointment(
 
         slot_ts = f"{data.appt_date} {data.slot_start}:00"
         appt_id_var = cursor.var(int)
-        cursor.execute("""
-            INSERT INTO APPOINTMENT (patient_id, doctor_id, department_id, appt_date, slot_start, status, reason_for_visit, created_by)
-            VALUES (
-                :pid, :did, :dept,
-                TO_DATE(:adate, 'YYYY-MM-DD'),
-                TO_TIMESTAMP(:slot_ts, 'YYYY-MM-DD HH24:MI:SS'),
-                'SCHEDULED', :reason, :created_by
-            ) RETURNING appointment_id INTO :aid
-        """, {
-            "pid": pid,
-            "did": data.doctor_id,
-            "dept": dept_id,
-            "adate": data.appt_date,
-            "slot_ts": slot_ts,
-            "reason": data.reason_for_visit,
-            "created_by": f"PATIENT_{pid}",
-            "aid": appt_id_var,
-        })
-        db.commit()
+        try:
+            cursor.execute("""
+                INSERT INTO APPOINTMENT (patient_id, doctor_id, department_id, appt_date, slot_start, status, reason_for_visit, created_by)
+                VALUES (
+                    :pid, :did, :dept,
+                    TO_DATE(:adate, 'YYYY-MM-DD'),
+                    TO_TIMESTAMP(:slot_ts, 'YYYY-MM-DD HH24:MI:SS'),
+                    'SCHEDULED', :reason, :created_by
+                ) RETURNING appointment_id INTO :aid
+            """, {
+                "pid": pid,
+                "did": data.doctor_id,
+                "dept": dept_id,
+                "adate": data.appt_date,
+                "slot_ts": slot_ts,
+                "reason": data.reason_for_visit,
+                "created_by": f"PATIENT_{pid}",
+                "aid": appt_id_var,
+            })
+            db.commit()
+        except oracledb.DatabaseError as e:
+            db.rollback()
+            err_obj = e.args[0]
+            code = getattr(err_obj, 'code', 0)
+            msg = getattr(err_obj, 'message', str(e))
+            if code == 20001 or 'Double booking' in msg:
+                raise HTTPException(409, "This time slot is already booked for the selected doctor. Please choose a different slot.")
+            if code == 20021:
+                raise HTTPException(400, "Appointment date cannot be in the past.")
+            if code == 20022:
+                raise HTTPException(400, "Appointments can only be booked up to 30 days in advance.")
+            if code == 20010:
+                raise HTTPException(409, "The doctor is on approved leave for this date. Please choose a different date or doctor.")
+            raise HTTPException(400, f"Booking failed: {msg}")
     return format_envelope(True, data={"appointment_id": appt_id_var.getvalue()[0]})
 
 
